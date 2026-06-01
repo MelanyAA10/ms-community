@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.infrastructure.persistence.postgresql.database import create_tables
-from app.infrastructure.web.routers import posts_router
+import os
 
 app = FastAPI(
     title="BookLoop Community API",
@@ -19,10 +18,18 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
-    create_tables()
+    try:
+        from app.infrastructure.persistence.postgresql.database import create_tables
+        create_tables()
+    except Exception as e:
+        print(f"Warning: Could not create tables: {e}")
 
+from app.infrastructure.web.routers import posts_router
 app.include_router(posts_router.router, prefix="/v1/community", tags=["Community"])
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "database_url_set": bool(os.getenv("DATABASE_URL"))
+    }
