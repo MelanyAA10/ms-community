@@ -1,3 +1,4 @@
+# .github/workflows/main_ms-community.yml
 name: Build and deploy Python app to Azure Web App - ms-community
 
 on:
@@ -9,7 +10,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,14 +19,22 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install dependencies into package folder
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+
+      - name: Zip artifact (sin .venv ni .git)
+        run: |
+          zip -r release.zip . \
+            --exclude "*.git*" \
+            --exclude ".venv/*" \
+            --exclude "__pycache__/*" \
+            --exclude "*.pyc"
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'ms-community'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: .
+          package: release.zip
