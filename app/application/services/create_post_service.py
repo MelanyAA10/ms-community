@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.application.ports.in.create_post_command import CreatePostCommand
+from app.application.ports.inbound.create_post_command import CreatePostCommand
 from app.application.ports.out.post_repository import PostRepository
 from app.domain.models.post import Post
 

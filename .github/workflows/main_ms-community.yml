@@ -7,31 +7,23 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt --target=".python_packages/lib/site-packages"
-
-      - name: Zip artifact
+      - name: Zip source for deploy
         run: |
           zip -r release.zip . \
-            --exclude "*.git*" \
-            --exclude ".venv/*" \
-            --exclude "__pycache__/*" \
-            --exclude "*.pyc" \
-            --exclude "output.tar.zst" \
-            --exclude "oryx-manifest.toml"
+            -x ".git/*" \
+            -x ".github/*" \
+            -x ".venv/*" "venv/*" "env/*" \
+            -x "*/__pycache__/*" "__pycache__/*" \
+            -x "*.pyc" \
+            -x ".python_packages/*" \
+            -x "output.tar.zst" "oryx-manifest.toml"
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3

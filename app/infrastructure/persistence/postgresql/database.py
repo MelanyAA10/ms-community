@@ -3,44 +3,57 @@
 import os
 import logging
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 logger = logging.getLogger(__name__)
 
-# ── 1. Leer y validar DATABASE_URL ────────────────────────────────────────────
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+# -- 1. Leer DATABASE_URL (sin reventar al importar) ---------------------------
+#    IMPORTANTE: este modulo NO debe lanzar excepciones a nivel de import. Si lo
+#    hace, FastAPI nunca define "app" y Azure no puede arrancar uvicorn, dando un
+#    404 / "Issues Detected" sin pista clara. En su lugar dejamos el engine en
+#    None y reportamos el estado por /health; create_tables() falla de forma
+#    controlada y registrada en el Log stream.
+def _normalize_url(url: str) -> str:
+    # SQLAlchemy 2.x solo acepta 'postgresql://', no el viejo 'postgres://'.
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+        logger.info("DATABASE_URL: prefijo 'postgres://' corregido a 'postgresql://'.")
+    return url
 
-if not DATABASE_URL:
-    raise RuntimeError(
-        "La variable de entorno DATABASE_URL no está configurada. "
-        "Agrégala en Azure Portal → Configuration → Environment variables."
-    )
 
-# ── 2. Fix para URLs con prefijo 'postgres://' (Heroku / Azure legacy) ────────
-#    SQLAlchemy 2.x solo acepta 'postgresql://', no 'postgres://'
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    logger.info("DATABASE_URL corregida: prefijo cambiado a 'postgresql://'")
+DATABASE_URL = _normalize_url(os.getenv("DATABASE_URL", "").strip())
 
-# ── 3. Crear engine con pool ajustado para Azure (conexiones limitadas en B1) ─
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,      # verifica conexión antes de usarla (evita "stale connections")
-    pool_size=5,             # máximo de conexiones permanentes en el pool
-    max_overflow=10,         # conexiones extra permitidas en pico de tráfico
-    pool_recycle=1800,       # recicla conexiones cada 30 min (evita timeouts de la BD)
-    echo=False,              # cambia a True temporalmente si quieres ver el SQL generado
-)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
+# -- 2. Crear engine de forma perezosa -----------------------------------------
+engine = None
+SessionLocal = None
 Base = declarative_base()
 
 
-# ── 4. Dependencia de FastAPI ─────────────────────────────────────────────────
+def _build_engine():
+    """Crea el engine y el sessionmaker la primera vez que se necesitan."""
+    global engine, SessionLocal
+    if engine is not None:
+        return
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "DATABASE_URL no esta configurada. Agregala en Azure Portal -> "
+            "Settings -> Environment variables (o Configuration)."
+        )
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,   # evita usar conexiones muertas (Azure corta las inactivas)
+        pool_size=5,
+        max_overflow=10,
+        pool_recycle=1800,    # recicla cada 30 min
+        echo=False,
+    )
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+# -- 3. Dependencia de FastAPI -------------------------------------------------
 def get_db():
-    """Inyecta una sesión de BD por request y la cierra al terminar."""
+    """Inyecta una sesion de BD por request y la cierra al terminar."""
+    _build_engine()
     db = SessionLocal()
     try:
         yield db
@@ -48,19 +61,16 @@ def get_db():
         db.close()
 
 
-# ── 5. Crear tablas + verificar conexión ──────────────────────────────────────
+# -- 4. Crear tablas + verificar conexion --------------------------------------
 def create_tables():
-    """Crea las tablas si no existen y verifica que la conexión sea válida."""
-    # Import aquí para evitar imports circulares
+    """Crea las tablas si no existen y verifica que la conexion sea valida."""
+    # Import aqui para registrar el modelo en Base y evitar imports circulares
     from app.infrastructure.persistence.postgresql.post_model import PostModel  # noqa: F401
 
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        logger.info("Conexión a PostgreSQL exitosa.")
-    except Exception as e:
-        logger.error(f"No se pudo conectar a PostgreSQL: {e}")
-        raise
+    _build_engine()
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    logger.info("Conexion a PostgreSQL exitosa.")
 
     Base.metadata.create_all(bind=engine)
-    logger.info("✅ Tablas verificadas/creadas correctamente.")
+    logger.info("Tablas verificadas/creadas correctamente.")

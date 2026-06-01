@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from app.application.ports.in.get_posts_query import GetPostsQuery
+from app.application.ports.inbound.get_posts_query import GetPostsQuery
 from app.application.ports.out.post_repository import PostRepository
 from app.domain.models.post import Post
 

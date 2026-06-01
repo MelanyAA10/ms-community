@@ -1,4 +1,4 @@
-from app.application.ports.in.like_post_command import LikePostCommand
+from app.application.ports.inbound.like_post_command import LikePostCommand
 from app.application.ports.out.post_repository import PostRepository
 from app.domain.models.post import Post
 from app.domain.exceptions.post_not_found import PostNotFoundException
