@@ -29,3 +29,18 @@ class PagedResponseDto(BaseModel):
     size: int
     total_elements: int
     total_pages: int
+
+#nuevos
+class CreateCommentDto(BaseModel):
+    author: str
+    content: str
+
+class CommentResponseDto(BaseModel):
+    id: int
+    post_id: int
+    author: str
+    content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

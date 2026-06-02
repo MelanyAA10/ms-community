@@ -64,8 +64,9 @@ def get_db():
 # -- 4. Crear tablas + verificar conexion --------------------------------------
 def create_tables():
     """Crea las tablas si no existen y verifica que la conexion sea valida."""
-    # Import aqui para registrar el modelo en Base y evitar imports circulares
+    # Import aqui para registrar los modelos en Base y evitar imports circulares
     from app.infrastructure.persistence.postgresql.post_model import PostModel  # noqa: F401
+    from app.infrastructure.persistence.postgresql.comment_model import CommentModel  # noqa: F401
 
     _build_engine()
     with engine.connect() as conn:
