@@ -24,7 +24,7 @@ class PostPostgresAdapter(PostRepository):
         total = self.db.query(PostModel).count()
         posts = self.db.query(PostModel)\
             .order_by(PostModel.created_at.desc())\
-            .offset((page - 1) * size)\
+            .offset(page * size)\
             .limit(size)\
             .all()
         return [self._to_domain(p) for p in posts], total
