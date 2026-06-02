@@ -27,7 +27,7 @@ def get_comment_repository(db: Session = Depends(get_db)):
     return CommentPostgresAdapter(db)
 
 # --- Crear post ---
-@router.post("/post", response_model=PostResponseDto, status_code=201)
+@router.post("/posts", response_model=PostResponseDto, status_code=201)
 def create_post(body: CreatePostDto, repo=Depends(get_post_repository)):
     service = CreatePostService(repo)
     post = service.execute(body.author, body.category, body.title, body.content)
@@ -43,7 +43,7 @@ def create_post(body: CreatePostDto, repo=Depends(get_post_repository)):
     )
 
 # --- Like ---
-@router.post("/post/{post_id}/like", response_model=PostResponseDto)
+@router.post("/posts/{post_id}/like", response_model=PostResponseDto)
 def like_post(post_id: int, repo=Depends(get_post_repository)):
     service = LikePostService(repo)
     try:
@@ -62,7 +62,7 @@ def like_post(post_id: int, repo=Depends(get_post_repository)):
         raise HTTPException(status_code=404, detail=str(e))
 
 # --- Comentarios (ANTES de /posts/{page}/{size} para evitar el choque de rutas) ---
-@router.post("/post/{post_id}/comments", response_model=CommentResponseDto, status_code=201)
+@router.post("/posts/{post_id}/comments", response_model=CommentResponseDto, status_code=201)
 def add_comment(post_id: int, body: CreateCommentDto,
                 comment_repo=Depends(get_comment_repository),
                 post_repo=Depends(get_post_repository)):
@@ -79,7 +79,7 @@ def add_comment(post_id: int, body: CreateCommentDto,
     except PostNotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-@router.get("/post/{post_id}/comments", response_model=list[CommentResponseDto])
+@router.get("/posts/{post_id}/comments", response_model=list[CommentResponseDto])
 def get_comments(post_id: int, comment_repo=Depends(get_comment_repository)):
     service = GetCommentsService(comment_repo)
     comments = service.execute(post_id)
@@ -94,7 +94,7 @@ def get_comments(post_id: int, comment_repo=Depends(get_comment_repository)):
     ]
 
 # --- Listar posts paginado (ruta generica: va de ULTIMA) ---
-@router.get("/get/{page}/{size}", response_model=PagedResponseDto)
+@router.get("/posts/{page}/{size}", response_model=PagedResponseDto)
 def get_posts(page: int, size: int, repo=Depends(get_post_repository)):
     service = GetPostsService(repo)
     posts, total = service.execute(page, size)
