@@ -55,9 +55,9 @@ class PostPostgresAdapter(PostRepository):
         self.db.commit()
         self.db.refresh(model)
         return self._to_domain(model)
-    
+
     def delete(self, post_id: int) -> None:
-    model = self.db.query(PostModel).filter(PostModel.id == post_id).first()
-    if model:
-        self.db.delete(model)
-        self.db.commit()
+        model = self.db.query(PostModel).filter(PostModel.id == post_id).first()
+        if model:
+            self.db.delete(model)
+            self.db.commit()
