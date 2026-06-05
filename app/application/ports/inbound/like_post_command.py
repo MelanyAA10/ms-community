@@ -3,5 +3,5 @@ from app.domain.models.post import Post
 
 class LikePostCommand(ABC):
     @abstractmethod
-    def execute(self, post_id: int) -> Post:
+    def execute(self, post_id: int, action: str = "like") -> Post:
         pass

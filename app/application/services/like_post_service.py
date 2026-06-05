@@ -7,9 +7,12 @@ class LikePostService(LikePostCommand):
     def __init__(self, post_repository: PostRepository):
         self.post_repository = post_repository
 
-    def execute(self, post_id: int) -> Post:
+    def execute(self, post_id: int, action: str = "like") -> Post:
         post = self.post_repository.find_by_id(post_id)
         if not post:
             raise PostNotFoundException(post_id)
-        post.likes += 1
+        if action == "unlike":
+            post.likes = max(post.likes - 1, 0)
+        else:
+            post.likes += 1
         return self.post_repository.update(post)

@@ -44,10 +44,10 @@ def create_post(body: CreatePostDto, repo=Depends(get_post_repository)):
 
 # --- Like ---
 @router.post("/posts/{post_id}/like", response_model=PostResponseDto)
-def like_post(post_id: int, repo=Depends(get_post_repository)):
+def like_post(post_id: int, action: str = "like", repo=Depends(get_post_repository)):
     service = LikePostService(repo)
     try:
-        post = service.execute(post_id)
+        post = service.execute(post_id, action)
         return PostResponseDto(
             id=post.id,
             author=post.author,
