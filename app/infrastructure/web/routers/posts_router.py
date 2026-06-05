@@ -9,6 +9,7 @@ from app.application.services.create_post_service import CreatePostService
 from app.application.services.like_post_service import LikePostService
 from app.application.services.add_comment_service import AddCommentService
 from app.application.services.get_comments_service import GetCommentsService
+from app.application.services.delete_post_service import DeletePostService
 from app.infrastructure.web.dto.post_dto import (
     CreatePostDto,
     PostResponseDto,
@@ -92,6 +93,15 @@ def get_comments(post_id: int, comment_repo=Depends(get_comment_repository)):
             created_at=c.created_at
         ) for c in comments
     ]
+
+# --- Eliminar post ---
+@router.delete("/posts/{post_id}", status_code=204)
+def delete_post(post_id: int, repo=Depends(get_post_repository)):
+    service = DeletePostService(repo)
+    try:
+        service.execute(post_id)
+    except PostNotFoundException as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 # --- Listar posts paginado (ruta generica: va de ULTIMA) ---
 @router.get("/posts/{page}/{size}", response_model=PagedResponseDto)
