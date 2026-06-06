@@ -62,7 +62,7 @@ def like_post(post_id: int, action: str = "like", repo=Depends(get_post_reposito
     except PostNotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-# --- Comentarios (ANTES de /posts/{page}/{size} para evitar el choque de rutas) ---
+# --- Comentarios ---
 @router.post("/posts/{post_id}/comments", response_model=CommentResponseDto, status_code=201)
 def add_comment(post_id: int, body: CreateCommentDto,
                 comment_repo=Depends(get_comment_repository),
@@ -96,8 +96,10 @@ def get_comments(post_id: int, comment_repo=Depends(get_comment_repository)):
 
 # --- Eliminar post ---
 @router.delete("/posts/{post_id}", status_code=204)
-def delete_post(post_id: int, repo=Depends(get_post_repository)):
-    service = DeletePostService(repo)
+def delete_post(post_id: int,
+                repo=Depends(get_post_repository),
+                comment_repo=Depends(get_comment_repository)):
+    service = DeletePostService(repo, comment_repo)
     try:
         service.execute(post_id)
     except PostNotFoundException as e:

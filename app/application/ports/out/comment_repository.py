@@ -10,3 +10,7 @@ class CommentRepository(ABC):
     @abstractmethod
     def find_by_post(self, post_id: int) -> List[Comment]:
         pass
+
+    @abstractmethod
+    def delete_by_post_id(self, post_id: int) -> None:
+        pass

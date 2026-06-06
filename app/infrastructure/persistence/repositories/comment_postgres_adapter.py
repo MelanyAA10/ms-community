@@ -36,3 +36,9 @@ class CommentPostgresAdapter(CommentRepository):
             .order_by(CommentModel.created_at.asc())\
             .all()
         return [self._to_domain(m) for m in models]
+
+    def delete_by_post_id(self, post_id: int) -> None:
+        self.db.query(CommentModel)\
+            .filter(CommentModel.post_id == post_id)\
+            .delete()
+        self.db.commit()
